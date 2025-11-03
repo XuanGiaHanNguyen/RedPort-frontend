@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react"
 import { AlertCircle, MapPin, Thermometer, Wind, TrendingUp, Search, Bell, Settings, ChevronDown, Activity, Users, Clock } from "lucide-react"
+import Icon from "../assets/Icon.png"
 
 // Mock disaster data
 const disasterData = [
@@ -72,8 +73,8 @@ function Header() {
     <header className="border-b border-gray-200 bg-white px-6 py-4 shadow-sm">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="p-2 rounded-xl bg-gradient-to-br from-red-500 to-orange-600 shadow-lg">
-            <Activity className="w-6 h-6 text-white" />
+          <div className="p-1">
+            <img src={Icon}></img>
           </div>
           <div>
             <h1 className="text-2xl font-bold bg-gradient-to-r from-red-600 to-orange-600 bg-clip-text text-transparent">
@@ -273,7 +274,7 @@ function AlertPanel({ selectedDisaster, onCenterMap, onSelectDisaster }) {
       {/* Enhanced Summary Stats */}
       <div className="border-b border-gray-200 p-5 bg-white">
         <h2 className="text-lg font-bold text-gray-900 mb-4">Emergency Overview</h2>
-        <div className="grid grid-cols-3 gap-3 mb-4">
+        <div className="grid grid-cols-3 gap-3 mb-2">
           <div className="text-center p-3 rounded-lg bg-gradient-to-br from-red-50 to-red-100 border border-red-200">
             <div className="text-2xl font-bold text-red-600">
               {disasterData.filter((d) => d.severity === "critical").length}
@@ -291,23 +292,6 @@ function AlertPanel({ selectedDisaster, onCenterMap, onSelectDisaster }) {
               {disasterData.filter((d) => d.severity === "medium").length}
             </div>
             <div className="text-xs text-amber-700 font-medium">Medium</div>
-          </div>
-        </div>
-        
-        <div className="grid grid-cols-2 gap-3">
-          <div className="p-3 rounded-lg bg-blue-50 border border-blue-200">
-            <div className="flex items-center gap-2 mb-1">
-              <Users className="w-4 h-4 text-blue-600" />
-              <span className="text-xs text-gray-600 font-medium">Evacuated</span>
-            </div>
-            <div className="text-lg font-bold text-gray-900">{totalEvacuated.toLocaleString()}</div>
-          </div>
-          <div className="p-3 rounded-lg bg-purple-50 border border-purple-200">
-            <div className="flex items-center gap-2 mb-1">
-              <MapPin className="w-4 h-4 text-purple-600" />
-              <span className="text-xs text-gray-600 font-medium">Area (km²)</span>
-            </div>
-            <div className="text-lg font-bold text-gray-900">{totalAffected.toLocaleString()}</div>
           </div>
         </div>
       </div>
