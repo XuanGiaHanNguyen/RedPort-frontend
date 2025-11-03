@@ -168,48 +168,27 @@ function DisasterMap({ center, onMarkerClick, selectedDisaster }) {
 
         const isSelected = selectedDisaster === disaster.id
         const baseRadius = isSelected ? 12 : 10
-        const pulseRadius = baseRadius + Math.sin(phase + index * 0.5) * 3
 
-        // Animated ripple effect
-        if (disaster.severity === "critical") {
-          for (let i = 3; i >= 0; i--) {
-            const rippleRadius = 40 + (phase * 20 + i * 15) % 60
-            const opacity = 0.15 - ((phase * 20 + i * 15) % 60) / 400
-            ctx.fillStyle = `rgba(239, 68, 68, ${opacity})`
-            ctx.beginPath()
-            ctx.arc(x, y, rippleRadius, 0, Math.PI * 2)
-            ctx.fill()
-          }
-        } else {
-          ctx.fillStyle = `rgba(239, 68, 68, ${0.12 - index * 0.02})`
-          ctx.beginPath()
-          ctx.arc(x, y, 35, 0, Math.PI * 2)
-          ctx.fill()
-        }
-
-        // Main marker with glow
+       
+        // Main marker with static glow for selected
         if (isSelected) {
           ctx.shadowColor = disaster.severity === "critical" ? "#dc2626" : "#ea580c"
-          ctx.shadowBlur = 20
+          ctx.shadowBlur = 12
         }
 
         ctx.fillStyle =
           disaster.severity === "critical" ? "#dc2626" : disaster.severity === "high" ? "#ea580c" : "#ca8a04"
         ctx.beginPath()
-        ctx.arc(x, y, pulseRadius, 0, Math.PI * 2)
+        ctx.arc(x, y, baseRadius, 0, Math.PI * 2)
         ctx.fill()
 
         ctx.shadowBlur = 0
 
-        // White border
-        ctx.strokeStyle = "#ffffff"
-        ctx.lineWidth = 3
-        ctx.stroke()
 
         // Subtle shadow
         ctx.fillStyle = "rgba(0, 0, 0, 0.1)"
         ctx.beginPath()
-        ctx.arc(x, y + 2, pulseRadius + 1, 0, Math.PI * 2)
+        ctx.arc(x, y + 2, baseRadius + 1, 0, Math.PI * 2)
         ctx.fill()
 
         markers.push({ id: disaster.id, x, y, radius: baseRadius + 15 })
@@ -219,7 +198,7 @@ function DisasterMap({ center, onMarkerClick, selectedDisaster }) {
     }
 
     const animate = () => {
-      setPulsePhase((p) => p + 0.05)
+      setPulsePhase((p) => p + 0.02)
       drawMap(pulsePhase)
       animationRef.current = requestAnimationFrame(animate)
     }
@@ -294,7 +273,7 @@ function AlertPanel({ selectedDisaster, onCenterMap, onSelectDisaster }) {
       {/* Enhanced Summary Stats */}
       <div className="border-b border-gray-200 p-5 bg-white">
         <h2 className="text-lg font-bold text-gray-900 mb-4">Emergency Overview</h2>
-        <div className="grid grid-cols-3 gap-3 mb-2">
+        <div className="grid grid-cols-3 gap-3 mb-4">
           <div className="text-center p-3 rounded-lg bg-gradient-to-br from-red-50 to-red-100 border border-red-200">
             <div className="text-2xl font-bold text-red-600">
               {disasterData.filter((d) => d.severity === "critical").length}
@@ -312,6 +291,23 @@ function AlertPanel({ selectedDisaster, onCenterMap, onSelectDisaster }) {
               {disasterData.filter((d) => d.severity === "medium").length}
             </div>
             <div className="text-xs text-amber-700 font-medium">Medium</div>
+          </div>
+        </div>
+        
+        <div className="grid grid-cols-2 gap-3">
+          <div className="p-3 rounded-lg bg-blue-50 border border-blue-200">
+            <div className="flex items-center gap-2 mb-1">
+              <Users className="w-4 h-4 text-blue-600" />
+              <span className="text-xs text-gray-600 font-medium">Evacuated</span>
+            </div>
+            <div className="text-lg font-bold text-gray-900">{totalEvacuated.toLocaleString()}</div>
+          </div>
+          <div className="p-3 rounded-lg bg-purple-50 border border-purple-200">
+            <div className="flex items-center gap-2 mb-1">
+              <MapPin className="w-4 h-4 text-purple-600" />
+              <span className="text-xs text-gray-600 font-medium">Area (km²)</span>
+            </div>
+            <div className="text-lg font-bold text-gray-900">{totalAffected.toLocaleString()}</div>
           </div>
         </div>
       </div>
