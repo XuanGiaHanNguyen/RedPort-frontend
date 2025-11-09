@@ -1,243 +1,373 @@
-import { useState, useEffect, useRef } from "react"
-import { AlertCircle, MapPin, Thermometer, Wind, TrendingUp, Search, Bell, Settings, ChevronDown, Activity, Users, Clock } from "lucide-react"
-import Icon from "../assets/Icon.png"
+import { useState, useRef, useEffect } from "react";
+import {
+  MapPin,
+  Activity,
+  AlertTriangle,
+  X,
+  ExternalLink,
+  Users,
+} from "lucide-react";
 
-// Mock disaster data
-const disasterData = [
+const mockDisasters = [
   {
-    id: "1",
+    id: 1,
+    type: "Earthquake",
+    location: "Japan",
+    severity: "critical",
+    coords: { lat: 35.68, lng: 139.69 },
+    evacuated: 15000,
+    description:
+      "Magnitude 7.8 earthquake struck the region causing widespread damage.",
+    news: [
+      { title: "Latest Updates on Japan Earthquake", url: "#" },
+      { title: "Rescue Operations Underway", url: "#" },
+      { title: "Government Response Update", url: "#" },
+    ],
+    communityReports: [
+      {
+        author: "Local Resident",
+        time: "2h ago",
+        message: "Roads damaged in downtown area",
+      },
+      {
+        author: "Community Center",
+        time: "4h ago",
+        message: "Shelter open at central hub",
+      },
+      {
+        author: "Volunteer Group",
+        time: "6h ago",
+        message: "Medical supplies needed",
+      },
+    ],
+  },
+  {
+    id: 2,
+    type: "Flood",
+    location: "India",
+    severity: "high",
+    coords: { lat: 20.59, lng: 78.96 },
+    evacuated: 8000,
+    description:
+      "Heavy monsoon rains causing severe flooding in multiple districts.",
+    news: [
+      { title: "Flood Waters Rising Across Region", url: "#" },
+      { title: "Emergency Response Mobilized", url: "#" },
+      { title: "Monsoon Forecast Update", url: "#" },
+    ],
+    communityReports: [
+      {
+        author: "NGO Worker",
+        time: "1h ago",
+        message: "Food supplies being distributed",
+      },
+      {
+        author: "Local Admin",
+        time: "3h ago",
+        message: "Water levels still rising",
+      },
+    ],
+  },
+  {
+    id: 3,
     type: "Wildfire",
     location: "California, USA",
-    coords: { lat: 36.7783, lng: -119.4179 },
-    severity: "critical",
-    intensity: 85,
-    affectedArea: 1250,
-    evacuated: 12500,
-    description: "Rapidly spreading wildfire threatening residential areas. Evacuations in progress.",
-    lastUpdated: "2 mins ago"
+    severity: "medium",
+    coords: { lat: 36.77, lng: -119.41 },
+    evacuated: 3000,
+    description:
+      "Wildfire spreading across 5,000 acres with strong winds fueling spread.",
+    news: [
+      { title: "Firefighters Battle Large Wildfire", url: "#" },
+      { title: "Air Quality Alert Issued", url: "#" },
+    ],
+    communityReports: [
+      {
+        author: "Fire Department",
+        time: "30m ago",
+        message: "Evacuation zones expanded",
+      },
+      {
+        author: "Resident",
+        time: "2h ago",
+        message: "Heavy smoke in the area",
+      },
+    ],
   },
   {
-    id: "2",
-    type: "Earthquake",
-    location: "Tokyo, Japan",
-    coords: { lat: 35.6762, lng: 139.6503 },
-    severity: "high",
-    intensity: 72,
-    affectedArea: 890,
-    evacuated: 8900,
-    description: "6.2 magnitude earthquake detected. Aftershocks expected in the next 24 hours.",
-    lastUpdated: "15 mins ago"
-  },
-  {
-    id: "3",
-    type: "Flood",
-    location: "Mumbai, India",
-    coords: { lat: 19.0760, lng: 72.8777 },
-    severity: "critical",
-    intensity: 90,
-    affectedArea: 2100,
-    evacuated: 15000,
-    description: "Severe monsoon flooding affecting low-lying areas. Emergency services deployed.",
-    lastUpdated: "5 mins ago"
-  },
-  {
-    id: "4",
+    id: 4,
     type: "Hurricane",
     location: "Florida, USA",
-    coords: { lat: 27.9944, lng: -81.7603 },
     severity: "high",
-    intensity: 78,
-    affectedArea: 1800,
-    evacuated: 11200,
-    description: "Category 3 hurricane approaching coastline. Storm surge warnings issued.",
-    lastUpdated: "8 mins ago"
+    coords: { lat: 27.99, lng: -81.76 },
+    evacuated: 5000,
+    description:
+      "Category 4 hurricane approaching with dangerous winds and storm surge.",
+    news: [
+      { title: "Hurricane Warning Continues", url: "#" },
+      { title: "Evacuation Orders in Effect", url: "#" },
+    ],
+    communityReports: [
+      {
+        author: "Emergency Manager",
+        time: "45m ago",
+        message: "All shelters at capacity",
+      },
+      { author: "Resident", time: "1h ago", message: "Boarding up homes" },
+    ],
   },
   {
-    id: "5",
-    type: "Drought",
-    location: "Sydney, Australia",
-    coords: { lat: -33.8688, lng: 151.2093 },
-    severity: "medium",
-    intensity: 65,
-    affectedArea: 950,
-    evacuated: 0,
-    description: "Severe water shortage affecting agricultural regions. Water restrictions in effect.",
-    lastUpdated: "1 hour ago"
-  }
-]
+    id: 5,
+    type: "Volcano",
+    location: "Indonesia",
+    severity: "critical",
+    coords: { lat: -6.2, lng: 106.8 },
+    evacuated: 12000,
+    description: "Volcanic eruption with ash column reaching 30,000 feet.",
+    news: [
+      { title: "Volcano Eruption Alert Level Raised", url: "#" },
+      { title: "Ash Spreading Across Region", url: "#" },
+      { title: "International Aid Incoming", url: "#" },
+    ],
+    communityReports: [
+      {
+        author: "Geological Survey",
+        time: "1h ago",
+        message: "Seismic activity ongoing",
+      },
+      {
+        author: "Evacuee",
+        time: "2h ago",
+        message: "Safe at evacuation center",
+      },
+    ],
+  },
+];
 
-function Header() {
-  const [notifications, setNotifications] = useState(3)
-  
+function DetailPanel({ disaster, onClose }) {
+  if (!disaster) return null;
+
   return (
-    <header className="border-b border-gray-200 bg-white px-6 py-4 shadow-sm">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="p-1">
-            <img src={Icon}></img>
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold bg-gradient-to-r from-red-600 to-orange-600 bg-clip-text text-transparent">
-              Naturalized
-            </h1>
-            <p className="text-sm text-gray-600">Real-time Natural Disaster Detection</p>
-          </div>
+    <div className="w-[400px] bg-white border-l border-gray-200 p-6 shadow-lg overflow-y-auto h-[750px]">
+      {/* Header with close button */}
+      <div className="flex justify-between items-start mb-4">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900">{disaster.type}</h2>
+          <p className="text-gray-600 flex items-center gap-2 mt-1">
+            <MapPin className="w-4 h-4" /> {disaster.location}
+          </p>
         </div>
+        <button
+          onClick={onClose}
+          className="text-gray-400 hover:text-gray-600 transition-colors"
+        >
+          <X className="w-6 h-6" />
+        </button>
+      </div>
 
-        <div className="flex items-center gap-4">
-          <div className="relative">
-            <input
-              type="text"
-              placeholder="Search disasters..."
-              className="pl-10 pr-4 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
-            />
-            <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+      {/* Severity Badge */}
+      <span
+        className={`inline-block px-3 py-1 rounded-full text-sm font-semibold mb-4 ${
+          disaster.severity === "critical"
+            ? "bg-red-100 text-red-800"
+            : disaster.severity === "high"
+            ? "bg-orange-100 text-orange-800"
+            : "bg-amber-100 text-amber-800"
+        }`}
+      >
+        {disaster.severity.charAt(0).toUpperCase() + disaster.severity.slice(1)}{" "}
+        Severity
+      </span>
+
+      {/* Key Information */}
+      <div className="bg-gray-50 rounded-lg p-4 mb-4 border border-gray-200">
+        <p className="text-sm text-gray-700 mb-3">{disaster.description}</p>
+        <div className="flex gap-4">
+          <div>
+            <p className="text-xs text-gray-600 font-medium">EVACUATED</p>
+            <p className="text-lg font-bold text-gray-900">
+              {disaster.evacuated.toLocaleString()}
+            </p>
           </div>
-          
-          <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200">
-            <div className="relative">
-              <div className="w-2 h-2 rounded-full bg-green-600" />
-              <div className="w-2 h-2 rounded-full bg-green-600 absolute inset-0 animate-ping" />
-            </div>
-            <span className="text-sm font-medium text-gray-700">Active Monitoring</span>
-          </div>
-
-          <button className="relative p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
-            <Bell className="w-5 h-5" />
-            {notifications > 0 && (
-              <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-600 text-white text-xs rounded-full flex items-center justify-center font-medium">
-                {notifications}
-              </span>
-            )}
-          </button>
-
-          <button className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
-            <Settings className="w-5 h-5" />
-          </button>
         </div>
       </div>
-    </header>
-  )
+
+      {/* Related News */}
+      <div className="mb-6">
+        <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+          <AlertTriangle className="w-4 h-4" />
+          Related News
+        </h3>
+        <div className="space-y-2">
+          {disaster.news.map((newsItem, idx) => (
+            <a
+              key={idx}
+              href={newsItem.url}
+              className="flex items-start gap-2 p-2 rounded-lg hover:bg-gray-50 transition-colors group"
+            >
+              <ExternalLink className="w-4 h-4 text-gray-400 group-hover:text-gray-600 flex-shrink-0 mt-0.5" />
+              <span className="text-sm text-gray-700 group-hover:text-gray-900 underline">
+                {newsItem.title}
+              </span>
+            </a>
+          ))}
+        </div>
+      </div>
+
+      {/* Community Reports */}
+      <div>
+        <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+          <Users className="w-4 h-4" />
+          Community Reports
+        </h3>
+        <div className="space-y-3">
+          {disaster.communityReports.map((report, idx) => (
+            <div
+              key={idx}
+              className="bg-gray-50 rounded-lg p-3 border border-gray-200"
+            >
+              <div className="flex justify-between items-start mb-1">
+                <p className="font-medium text-sm text-gray-900">
+                  {report.author}
+                </p>
+                <p className="text-xs text-gray-500">{report.time}</p>
+              </div>
+              <p className="text-sm text-gray-700">{report.message}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
 }
 
-function DisasterMap({ center, onMarkerClick, selectedDisaster }) {
-  const mapContainer = useRef(null)
-  const canvasRef = useRef(null)
-  const animationRef = useRef(null)
-  const [clickableMarkers, setClickableMarkers] = useState([])
-  const [pulsePhase, setPulsePhase] = useState(0)
+function DisasterMap({ selectedDisaster, onMarkerClick }) {
+  const mapContainer = useRef(null);
+  const canvasRef = useRef(null);
+  const animationRef = useRef(null);
+  const [clickableMarkers, setClickableMarkers] = useState([]);
+  const [pulsePhase, setPulsePhase] = useState(0);
 
   useEffect(() => {
-    if (!canvasRef.current || !mapContainer.current) return
+    if (!canvasRef.current || !mapContainer.current) return;
 
-    const canvas = canvasRef.current
-    const ctx = canvas.getContext("2d")
-    if (!ctx) return
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
 
-    canvas.width = mapContainer.current.clientWidth
-    canvas.height = mapContainer.current.clientHeight
+    canvas.width = mapContainer.current.clientWidth;
+    canvas.height = mapContainer.current.clientHeight;
 
-    const drawMap = (phase) => {
-      // Background gradient
-      const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height)
-      gradient.addColorStop(0, "#fafafa")
-      gradient.addColorStop(1, "#f5f5f5")
-      ctx.fillStyle = gradient
-      ctx.fillRect(0, 0, canvas.width, canvas.height)
+    const drawMap = () => {
+      const gradient = ctx.createLinearGradient(
+        0,
+        0,
+        canvas.width,
+        canvas.height
+      );
+      gradient.addColorStop(0, "#fafafa");
+      gradient.addColorStop(1, "#f5f5f5");
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      // Grid lines
-      ctx.strokeStyle = "rgba(200, 200, 200, 0.2)"
-      ctx.lineWidth = 1
+      // grid
+      ctx.strokeStyle = "rgba(200, 200, 200, 0.2)";
+      ctx.lineWidth = 1;
       for (let i = 0; i <= canvas.width; i += 50) {
-        ctx.beginPath()
-        ctx.moveTo(i, 0)
-        ctx.lineTo(i, canvas.height)
-        ctx.stroke()
+        ctx.beginPath();
+        ctx.moveTo(i, 0);
+        ctx.lineTo(i, canvas.height);
+        ctx.stroke();
       }
       for (let i = 0; i <= canvas.height; i += 50) {
-        ctx.beginPath()
-        ctx.moveTo(0, i)
-        ctx.lineTo(canvas.width, i)
-        ctx.stroke()
+        ctx.beginPath();
+        ctx.moveTo(0, i);
+        ctx.lineTo(canvas.width, i);
+        ctx.stroke();
       }
 
-      const markers = []
+      const markers = [];
 
-      disasterData.forEach((disaster, index) => {
-        const x = ((disaster.coords.lng + 180) / 360) * canvas.width
-        const y = ((90 - disaster.coords.lat) / 180) * canvas.height
+      mockDisasters.forEach((disaster) => {
+        const x = ((disaster.coords.lng + 180) / 360) * canvas.width;
+        const y = ((90 - disaster.coords.lat) / 180) * canvas.height;
+        const isSelected = selectedDisaster === disaster.id;
+        const baseRadius = isSelected ? 12 : 10;
 
-        const isSelected = selectedDisaster === disaster.id
-        const baseRadius = isSelected ? 12 : 10
-
-       
-        // Main marker with static glow for selected
         if (isSelected) {
-          ctx.shadowColor = disaster.severity === "critical" ? "#dc2626" : "#ea580c"
-          ctx.shadowBlur = 12
+          ctx.shadowColor =
+            disaster.severity === "critical" ? "#dc2626" : "#ea580c";
+          ctx.shadowBlur = 12;
         }
 
         ctx.fillStyle =
-          disaster.severity === "critical" ? "#dc2626" : disaster.severity === "high" ? "#ea580c" : "#ca8a04"
-        ctx.beginPath()
-        ctx.arc(x, y, baseRadius, 0, Math.PI * 2)
-        ctx.fill()
+          disaster.severity === "critical"
+            ? "#dc2626"
+            : disaster.severity === "high"
+            ? "#ea580c"
+            : "#ca8a04";
 
-        ctx.shadowBlur = 0
+        ctx.beginPath();
+        ctx.arc(x, y, baseRadius, 0, Math.PI * 2);
+        ctx.fill();
 
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = "rgba(0, 0, 0, 0.1)";
+        ctx.beginPath();
+        ctx.arc(x, y + 2, baseRadius + 1, 0, Math.PI * 2);
+        ctx.fill();
 
-        // Subtle shadow
-        ctx.fillStyle = "rgba(0, 0, 0, 0.1)"
-        ctx.beginPath()
-        ctx.arc(x, y + 2, baseRadius + 1, 0, Math.PI * 2)
-        ctx.fill()
+        markers.push({ id: disaster.id, x, y, radius: baseRadius + 15 });
+      });
 
-        markers.push({ id: disaster.id, x, y, radius: baseRadius + 15 })
-      })
-
-      setClickableMarkers(markers)
-    }
+      // only update markers *once per draw*, not per frame re-render
+      setClickableMarkers(markers);
+    };
 
     const animate = () => {
-      setPulsePhase((p) => p + 0.02)
-      drawMap(pulsePhase)
-      animationRef.current = requestAnimationFrame(animate)
-    }
+      drawMap();
+      animationRef.current = requestAnimationFrame(animate);
+    };
 
-    animate()
+    animate();
 
     return () => {
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current)
-      }
-    }
-  }, [pulsePhase, selectedDisaster])
+      if (animationRef.current) cancelAnimationFrame(animationRef.current);
+    };
+  }, [selectedDisaster]); // <-- only redraw when selection changes
 
   const handleCanvasClick = (e) => {
-    if (!canvasRef.current) return
-    const rect = canvasRef.current.getBoundingClientRect()
-    const x = e.clientX - rect.left
-    const y = e.clientY - rect.top
+    if (!canvasRef.current) return;
+    const rect = canvasRef.current.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
 
     clickableMarkers.forEach((marker) => {
-      const distance = Math.hypot(x - marker.x, y - marker.y)
+      const distance = Math.hypot(x - marker.x, y - marker.y);
       if (distance < marker.radius) {
-        onMarkerClick(marker.id)
+        onMarkerClick(marker.id);
       }
-    })
-  }
+    });
+  };
 
   return (
-    <div ref={mapContainer} className="w-full h-full bg-white relative cursor-pointer overflow-hidden">
-      <canvas ref={canvasRef} onClick={handleCanvasClick} className="absolute inset-0" />
-      
-      {/* Map overlay controls */}
+    <div
+      ref={mapContainer}
+      className="w-full h-[750px] bg-white relative cursor-pointer"
+    >
+      <canvas
+        ref={canvasRef}
+        onClick={handleCanvasClick}
+        className="absolute inset-0"
+      />
+
+      {/* Legend */}
       <div className="absolute top-4 left-4 bg-white rounded-lg shadow-lg p-3 border border-gray-200">
         <div className="flex items-center gap-2 text-xs text-gray-600 mb-2">
           <Activity className="w-3 h-3" />
-          <span className="font-medium">Active Disasters: {disasterData.length}</span>
+          <span className="font-medium">Active: {mockDisasters.length}</span>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-3">
           <div className="flex items-center gap-1">
             <div className="w-3 h-3 rounded-full bg-red-600" />
             <span className="text-xs text-gray-600">Critical</span>
@@ -254,186 +384,37 @@ function DisasterMap({ center, onMarkerClick, selectedDisaster }) {
       </div>
 
       <div className="absolute bottom-4 right-4 bg-white/90 backdrop-blur-sm rounded-lg px-3 py-2 border border-gray-200">
-        <p className="text-xs text-gray-600 font-medium">Global Disaster Heat Map</p>
+        <p className="text-xs text-gray-600 font-medium">
+          Global Disaster Heat Map
+        </p>
       </div>
     </div>
-  )
+  );
 }
 
-function AlertPanel({ selectedDisaster, onCenterMap, onSelectDisaster }) {
-  const sortedDisasters = [...disasterData].sort((a, b) => {
-    const severityOrder = { critical: 0, high: 1, medium: 2, low: 3 }
-    return severityOrder[a.severity] - severityOrder[b.severity]
-  })
-
-  const totalEvacuated = disasterData.reduce((sum, d) => sum + d.evacuated, 0)
-  const totalAffected = disasterData.reduce((sum, d) => sum + d.affectedArea, 0)
+export default function Default() {
+  const [selectedDisaster, setSelectedDisaster] = useState(null);
+  const selectedDisasterData = selectedDisaster
+    ? mockDisasters.find((d) => d.id === selectedDisaster)
+    : null;
 
   return (
-    <div className="h-full flex flex-col bg-gradient-to-b from-white to-gray-50">
-      {/* Enhanced Summary Stats */}
-      <div className="border-b border-gray-200 p-5 bg-white">
-        <h2 className="text-lg font-bold text-gray-900 mb-4">Emergency Overview</h2>
-        <div className="grid grid-cols-3 gap-3 mb-2">
-          <div className="text-center p-3 rounded-lg bg-gradient-to-br from-red-50 to-red-100 border border-red-200">
-            <div className="text-2xl font-bold text-red-600">
-              {disasterData.filter((d) => d.severity === "critical").length}
-            </div>
-            <div className="text-xs text-red-700 font-medium">Critical</div>
-          </div>
-          <div className="text-center p-3 rounded-lg bg-gradient-to-br from-orange-50 to-orange-100 border border-orange-200">
-            <div className="text-2xl font-bold text-orange-600">
-              {disasterData.filter((d) => d.severity === "high").length}
-            </div>
-            <div className="text-xs text-orange-700 font-medium">High</div>
-          </div>
-          <div className="text-center p-3 rounded-lg bg-gradient-to-br from-amber-50 to-amber-100 border border-amber-200">
-            <div className="text-2xl font-bold text-amber-600">
-              {disasterData.filter((d) => d.severity === "medium").length}
-            </div>
-            <div className="text-xs text-amber-700 font-medium">Medium</div>
-          </div>
-        </div>
+    <div className="flex w-full">
+      {/* Map fills remaining space */}
+      <div className="flex-1 h-full">
+        <DisasterMap
+          selectedDisaster={selectedDisaster}
+          onMarkerClick={setSelectedDisaster}
+        />
       </div>
 
-      {/* Alerts List */}
-      <div className="flex-1 overflow-y-auto">
-        <div className="p-4 space-y-3">
-          {sortedDisasters.map((disaster) => (
-            <div
-              key={disaster.id}
-              className={`rounded-xl border-2 cursor-pointer transition-all duration-200 ${
-                selectedDisaster === disaster.id
-                  ? "border-red-400 bg-gradient-to-br from-red-50 to-orange-50 shadow-lg scale-[1.02]"
-                  : "border-gray-200 hover:border-gray-300 bg-white hover:shadow-md"
-              }`}
-              onClick={() => {
-                onSelectDisaster(disaster.id)
-                onCenterMap(disaster.coords)
-              }}
-            >
-              <div className="pb-2 pt-3 px-4">
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex items-start gap-2 flex-1">
-                    <AlertCircle
-                      className={`w-5 h-5 mt-0.5 flex-shrink-0 ${
-                        disaster.severity === "critical"
-                          ? "text-red-600"
-                          : disaster.severity === "high"
-                          ? "text-orange-600"
-                          : "text-amber-600"
-                      }`}
-                    />
-                    <div className="flex-1 min-w-0">
-                      <div className="text-base font-semibold text-gray-900">{disaster.type}</div>
-                      <div className="text-xs mt-1 text-gray-600 flex items-center gap-1">
-                        <MapPin className="w-3 h-3" />
-                        {disaster.location}
-                      </div>
-                    </div>
-                  </div>
-                  <span
-                    className={`text-xs px-2.5 py-1 rounded-full font-semibold shadow-sm ${
-                      disaster.severity === "critical"
-                        ? "bg-red-600 text-white"
-                        : disaster.severity === "high"
-                        ? "bg-orange-600 text-white"
-                        : "bg-amber-100 text-amber-800 border border-amber-300"
-                    }`}
-                  >
-                    {disaster.severity.toUpperCase()}
-                  </span>
-                </div>
-              </div>
-
-              {selectedDisaster === disaster.id && (
-                <div className="px-4 pb-4 space-y-3 animate-in fade-in duration-200">
-                  <div className="grid grid-cols-2 gap-2">
-                    <div className="bg-white rounded-lg p-2 border border-gray-200">
-                      <div className="flex items-center gap-2 mb-1">
-                        <Thermometer className="w-3 h-3 text-red-500" />
-                        <span className="text-xs text-gray-600">Intensity</span>
-                      </div>
-                      <div className="text-sm font-bold text-gray-900">{disaster.intensity}%</div>
-                    </div>
-                    <div className="bg-white rounded-lg p-2 border border-gray-200">
-                      <div className="flex items-center gap-2 mb-1">
-                        <Wind className="w-3 h-3 text-blue-600" />
-                        <span className="text-xs text-gray-600">Affected</span>
-                      </div>
-                      <div className="text-sm font-bold text-gray-900">{disaster.affectedArea} km²</div>
-                    </div>
-                  </div>
-
-                  {disaster.evacuated > 0 && (
-                    <div className="bg-blue-50 rounded-lg p-3 border border-blue-200">
-                      <div className="flex items-center gap-2 mb-1">
-                        <Users className="w-4 h-4 text-blue-600" />
-                        <span className="text-xs font-semibold text-gray-900">Evacuations</span>
-                      </div>
-                      <div className="text-lg font-bold text-blue-600">{disaster.evacuated.toLocaleString()}</div>
-                    </div>
-                  )}
-
-                  <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg p-3 border border-blue-200">
-                    <p className="font-semibold mb-2 flex items-center gap-2 text-gray-900 text-sm">
-                      <TrendingUp className="w-4 h-4" />
-                      Situation Report
-                    </p>
-                    <p className="text-sm text-gray-700 leading-relaxed">{disaster.description}</p>
-                  </div>
-
-                  <div className="pt-2 border-t border-gray-200">
-                    <div className="flex items-center gap-2 text-xs text-gray-600 mb-3">
-                      <Clock className="w-3 h-3" />
-                      <span>Updated {disaster.lastUpdated}</span>
-                    </div>
-                    <button className="w-full px-4 py-2.5 text-sm font-semibold text-white bg-gradient-to-r from-red-600 to-orange-600 rounded-lg hover:from-red-700 hover:to-orange-700 transition-all duration-200 shadow-md hover:shadow-lg">
-                      View Safety Guidelines
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      </div>
+      {/* Detail panel slides in */}
+      {selectedDisasterData && (
+        <DetailPanel
+          disaster={selectedDisasterData}
+          onClose={() => setSelectedDisaster(null)}
+        />
+      )}
     </div>
-  )
-}
-
-export default function Base() {
-  const [selectedDisaster, setSelectedDisaster] = useState(null)
-  const [center, setCenter] = useState({ lat: 20, lng: 0 })
-
-  const handleMarkerClick = (id) => {
-    setSelectedDisaster(selectedDisaster === id ? null : id)
-    const disaster = disasterData.find(d => d.id === id)
-    if (disaster) {
-      setCenter(disaster.coords)
-    }
-  }
-
-  return (
-    <div className="min-h-screen bg-gray-50">
-      <Header />
-      <div className="flex h-[calc(100vh-88px)]">
-        <div className="flex-1">
-          <DisasterMap 
-            center={center} 
-            onMarkerClick={handleMarkerClick}
-            selectedDisaster={selectedDisaster}
-          />
-        </div>
-
-        <div className="w-96 overflow-hidden shadow-xl">
-          <AlertPanel 
-            selectedDisaster={selectedDisaster} 
-            onCenterMap={(coords) => setCenter(coords)}
-            onSelectDisaster={(id) => setSelectedDisaster(selectedDisaster === id ? null : id)}
-          />
-        </div>
-      </div>
-    </div>
-  )
+  );
 }
