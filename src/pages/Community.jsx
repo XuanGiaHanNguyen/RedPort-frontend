@@ -1,5 +1,13 @@
 import React, { useState } from "react";
-import { Heart, MessageCircle, Share2, Upload, Calendar, MapPin } from "lucide-react";
+import {
+  Heart,
+  MessageCircle,
+  Share2,
+  Upload,
+  Calendar,
+  MapPin,
+  Navigation,
+} from "lucide-react";
 
 const mockCommunityReports = [
   {
@@ -11,9 +19,10 @@ const mockCommunityReports = [
       "Heavy flooding on Main Street near the bridge. Cars are getting stuck and water is rising quickly. Avoid the area if possible!",
     image: true,
     severity: "critical",
+    type: "Flood",
     likes: 12,
     comments: 4,
-    liked: false
+    liked: false,
   },
   {
     id: "report-002",
@@ -24,9 +33,10 @@ const mockCommunityReports = [
       "Power outage affecting several blocks. Local crews are on-site but expect delays until evening.",
     image: false,
     severity: "high",
+    type: "Hurricane",
     likes: 8,
     comments: 2,
-    liked: false
+    liked: false,
   },
   {
     id: "report-003",
@@ -37,14 +47,33 @@ const mockCommunityReports = [
       "Strong winds knocked over a few trees near the park. City workers are clearing the road now.",
     image: true,
     severity: "medium",
+    type: "Tornado",
     likes: 5,
     comments: 1,
-    liked: false
-  }
+    liked: false,
+  },
 ];
 
 export default function CommunityReports() {
   const [reports, setReports] = useState(mockCommunityReports);
+
+  const [content, setContent] = useState("");
+  const [location, setLocation] = useState("");
+  const [selectedType, setSelectedType] = useState("");
+
+  const handleMyLocation = () => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const { latitude, longitude } = pos.coords;
+          setLocation(`Lat: ${latitude.toFixed(3)}, Lng: ${longitude.toFixed(3)}`);
+        },
+        () => alert("Unable to fetch your location.")
+      );
+    } else {
+      alert("Geolocation not supported by this browser.");
+    }
+  };
 
   const toggleLike = (id) => {
     setReports(
@@ -56,6 +85,41 @@ export default function CommunityReports() {
     );
   };
 
+  const handleSubmit = () => {
+    if (!content.trim() || !location.trim() || !selectedType) {
+      alert("Please fill out all fields before submitting.");
+      return;
+    }
+
+    const newReport = {
+      id: `report-${Date.now()}`,
+      author: "You",
+      timestamp: new Date().toLocaleString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+        hour: "numeric",
+        minute: "2-digit",
+      }),
+      location,
+      content,
+      image: false,
+      severity: "medium",
+      type: selectedType,
+      likes: 0,
+      comments: 0,
+      liked: false,
+    };
+
+    setReports([newReport, ...reports]);
+    setContent("");
+    setLocation("");
+    setSelectedType("");
+  };
+
+  // Get unique types from reports
+  const availableTypes = [...new Set(reports.map((r) => r.type))];
+
   return (
     <div className="flex flex-col min-h-screen bg-neutral-50">
       <div className="flex-1 overflow-y-auto p-6">
@@ -66,17 +130,62 @@ export default function CommunityReports() {
             <h3 className="text-sm font-semibold text-slate-800 mb-3">
               Submit a New Report
             </h3>
+
+            {/* Location Input */}
+            <div className="mb-3">
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={location}
+                  onChange={(e) => setLocation(e.target.value)}
+                  placeholder="Enter a location or area"
+                  className="flex-1 rounded-md border border-slate-300 px-3 py-2 text-sm focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                />
+                <button
+                  onClick={handleMyLocation}
+                  className="flex items-center gap-1 px-3 py-2 bg-red-600 hover:bg-red-700 text-white text-sm rounded-md transition"
+                >
+                  <Navigation className="w-4 h-4" />
+                  My Location
+                </button>
+              </div>
+            </div>
+
+            {/* Disaster Type Dropdown */}
+            <div className="mb-3">
+              <select
+                value={selectedType}
+                onChange={(e) => setSelectedType(e.target.value)}
+                className="w-full px-3 rounded-md border border-slate-300 py-2 text-sm focus:ring-2 focus:ring-red-500 focus:border-red-500"
+              >
+                <option value="">Select a disaster ...</option>
+                {availableTypes.map((type) => (
+                  <option key={type} value={type}>
+                    {type}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Description */}
+            
             <textarea
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
               placeholder="Describe what you’re experiencing..."
               rows={3}
-              className="w-full text-sm border border-slate-300 rounded-md p-3 text-slate-800 placeholder:text-slate-400 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 mb-3 resize-none"
+              className="w-full text-sm border border-slate-300 rounded-md p-3 text-slate-800 placeholder:text-slate-400 bg-white focus:outline-none focus:ring-2 focus:ring-red-500 mb-3 resize-none"
             />
+
             <div className="flex gap-2">
               <button className="flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 transition">
                 <Upload className="w-4 h-4" />
                 Add Photos
               </button>
-              <button className="flex-1 px-3 py-2 rounded-md text-sm font-medium text-white bg-red-600 hover:bg-red-700 transition">
+              <button
+                onClick={handleSubmit}
+                className="flex-1 px-3 py-2 rounded-md text-sm font-medium text-white bg-red-600 hover:bg-red-700 transition"
+              >
                 Submit Report
               </button>
             </div>
@@ -114,7 +223,7 @@ export default function CommunityReports() {
                         : "bg-yellow-100 text-yellow-700"
                     }`}
                   >
-                    {report.severity}
+                    {report.type}
                   </span>
                 </div>
 
@@ -160,6 +269,7 @@ export default function CommunityReports() {
               </div>
             ))}
           </div>
+
         </div>
       </div>
     </div>

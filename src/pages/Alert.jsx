@@ -11,6 +11,7 @@ import {
   Info,
   Siren,
 } from "lucide-react"
+import { useNavigate } from "react-router-dom"
 
 const mockAlerts = {
   disasterTypes: [
@@ -95,6 +96,7 @@ export default function AlertsCenter() {
   const [subscribedTypes, setSubscribedTypes] = useState(["Wildfire", "Earthquake"])
   const [subscribedLocations, setSubscribedLocations] = useState(["California, USA"])
   const [notificationMethods, setNotificationMethods] = useState(["Email", "Push"])
+  const navigate = useNavigate()
 
   const [openSection, setOpenSection] = useState("types")
 
@@ -248,7 +250,7 @@ export default function AlertsCenter() {
               </p>
               <button
                 className="mt-3 w-full text-sm font-medium text-white bg-red-600 hover:bg-red-700 transition rounded-md py-2"
-                onClick={() => alert("Emergency report form coming soon!")}
+                onClick={() => navigate("/report", { state: { from: window.location.pathname } })}
               >
                 Report Emergency
               </button>
