@@ -7,6 +7,8 @@ import {
   ExternalLink,
   Users,
 } from "lucide-react";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
 
 const mockDisasters = [
   {
@@ -144,12 +146,18 @@ const mockDisasters = [
   },
 ];
 
+// -------------------- Detail Panel --------------------
 function DetailPanel({ disaster, onClose }) {
-  if (!disaster) return null;
+  if (!disaster) {
+    return (
+      <div className="w-[400px] bg-white border-l border-gray-200 p-6 shadow-lg h-screen flex items-center justify-center text-gray-500 text-center">
+        <p>Select a disaster marker on the map to view details.</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="w-[400px] bg-white border-l border-gray-200 p-6 shadow-lg overflow-y-auto h-[750px]">
-      {/* Header with close button */}
+    <div className="w-[400px] bg-white border-l border-gray-200 p-6 shadow-lg overflow-y-auto h-screen">
       <div className="flex justify-between items-start mb-4">
         <div>
           <h2 className="text-2xl font-bold text-gray-900">{disaster.type}</h2>
@@ -157,15 +165,8 @@ function DetailPanel({ disaster, onClose }) {
             <MapPin className="w-4 h-4" /> {disaster.location}
           </p>
         </div>
-        <button
-          onClick={onClose}
-          className="text-gray-400 hover:text-gray-600 transition-colors"
-        >
-          <X className="w-6 h-6" />
-        </button>
       </div>
 
-      {/* Severity Badge */}
       <span
         className={`inline-block px-3 py-1 rounded-full text-sm font-semibold mb-4 ${
           disaster.severity === "critical"
@@ -179,20 +180,16 @@ function DetailPanel({ disaster, onClose }) {
         Severity
       </span>
 
-      {/* Key Information */}
       <div className="bg-gray-50 rounded-lg p-4 mb-4 border border-gray-200">
         <p className="text-sm text-gray-700 mb-3">{disaster.description}</p>
-        <div className="flex gap-4">
-          <div>
-            <p className="text-xs text-gray-600 font-medium">EVACUATED</p>
-            <p className="text-lg font-bold text-gray-900">
-              {disaster.evacuated.toLocaleString()}
-            </p>
-          </div>
+        <div>
+          <p className="text-xs text-gray-600 font-medium">EVACUATED</p>
+          <p className="text-lg font-bold text-gray-900">
+            {disaster.evacuated.toLocaleString()}
+          </p>
         </div>
       </div>
 
-      {/* Related News */}
       <div className="mb-6">
         <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
           <AlertTriangle className="w-4 h-4" />
@@ -203,6 +200,8 @@ function DetailPanel({ disaster, onClose }) {
             <a
               key={idx}
               href={newsItem.url}
+              target="_blank"
+              rel="noopener noreferrer"
               className="flex items-start gap-2 p-2 rounded-lg hover:bg-gray-50 transition-colors group"
             >
               <ExternalLink className="w-4 h-4 text-gray-400 group-hover:text-gray-600 flex-shrink-0 mt-0.5" />
@@ -214,7 +213,6 @@ function DetailPanel({ disaster, onClose }) {
         </div>
       </div>
 
-      {/* Community Reports */}
       <div>
         <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
           <Users className="w-4 h-4" />
@@ -241,128 +239,118 @@ function DetailPanel({ disaster, onClose }) {
   );
 }
 
+// -------------------- Map --------------------
 function DisasterMap({ selectedDisaster, onMarkerClick }) {
   const mapContainer = useRef(null);
-  const canvasRef = useRef(null);
-  const animationRef = useRef(null);
-  const [clickableMarkers, setClickableMarkers] = useState([]);
-  const [pulsePhase, setPulsePhase] = useState(0);
+  const mapInstance = useRef(null);
+  const markersRef = useRef({});
 
   useEffect(() => {
-    if (!canvasRef.current || !mapContainer.current) return;
+    if (!mapContainer.current || mapInstance.current) return;
 
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
+    // 🌎 Initialize centered on Florida
+    const map = L.map(mapContainer.current, {
+      zoomControl: true,
+      minZoom: 2,
+      maxZoom: 19,
+      attributionControl: false,
+      maxBounds: [
+        [-90, -180],
+        [90, 180],
+      ],
+      maxBoundsViscosity: 1.0,
+    }).setView([27.99, -81.76], 5);
 
-    canvas.width = mapContainer.current.clientWidth;
-    canvas.height = mapContainer.current.clientHeight;
+    // Add OSM tiles
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      noWrap: true,
+    }).addTo(map);
 
-    const drawMap = () => {
-      const gradient = ctx.createLinearGradient(
-        0,
-        0,
-        canvas.width,
-        canvas.height
-      );
-      gradient.addColorStop(0, "#fafafa");
-      gradient.addColorStop(1, "#f5f5f5");
-      ctx.fillStyle = gradient;
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
+    mapInstance.current = map;
 
-      // grid
-      ctx.strokeStyle = "rgba(200, 200, 200, 0.2)";
-      ctx.lineWidth = 1;
-      for (let i = 0; i <= canvas.width; i += 50) {
-        ctx.beginPath();
-        ctx.moveTo(i, 0);
-        ctx.lineTo(i, canvas.height);
-        ctx.stroke();
-      }
-      for (let i = 0; i <= canvas.height; i += 50) {
-        ctx.beginPath();
-        ctx.moveTo(0, i);
-        ctx.lineTo(canvas.width, i);
-        ctx.stroke();
-      }
+    const createCustomIcon = (severity, isSelected) => {
+      const color =
+        severity === "critical"
+          ? "#dc2626"
+          : severity === "high"
+          ? "#ea580c"
+          : "#ca8a04";
+      return L.divIcon({
+        className: "custom-marker",
+        html: `<div style="
+          width:${isSelected ? 16 : 12}px;
+          height:${isSelected ? 16 : 12}px;
+          background-color:${color};
+          border:2px solid white;
+          border-radius:50%;
+          box-shadow:0 2px 8px rgba(0,0,0,0.3);
+          ${isSelected ? "transform:scale(1.2);" : ""}
+        "></div>`,
+      });
+    };
 
-      const markers = [];
+    // Add all disaster markers
+    mockDisasters.forEach((disaster) => {
+      const marker = L.marker([disaster.coords.lat, disaster.coords.lng], {
+        icon: createCustomIcon(disaster.severity, false),
+      }).addTo(map);
 
-      mockDisasters.forEach((disaster) => {
-        const x = ((disaster.coords.lng + 180) / 360) * canvas.width;
-        const y = ((90 - disaster.coords.lat) / 180) * canvas.height;
-        const isSelected = selectedDisaster === disaster.id;
-        const baseRadius = isSelected ? 12 : 10;
-
-        if (isSelected) {
-          ctx.shadowColor =
-            disaster.severity === "critical" ? "#dc2626" : "#ea580c";
-          ctx.shadowBlur = 12;
-        }
-
-        ctx.fillStyle =
-          disaster.severity === "critical"
-            ? "#dc2626"
-            : disaster.severity === "high"
-            ? "#ea580c"
-            : "#ca8a04";
-
-        ctx.beginPath();
-        ctx.arc(x, y, baseRadius, 0, Math.PI * 2);
-        ctx.fill();
-
-        ctx.shadowBlur = 0;
-        ctx.fillStyle = "rgba(0, 0, 0, 0.1)";
-        ctx.beginPath();
-        ctx.arc(x, y + 2, baseRadius + 1, 0, Math.PI * 2);
-        ctx.fill();
-
-        markers.push({ id: disaster.id, x, y, radius: baseRadius + 15 });
+      marker.on("click", () => {
+        onMarkerClick(disaster.id);
+        map.setView([disaster.coords.lat, disaster.coords.lng], 5, {
+          animate: true,
+        });
       });
 
-      // only update markers *once per draw*, not per frame re-render
-      setClickableMarkers(markers);
-    };
+      marker.bindTooltip(
+        `<strong>${disaster.type}</strong><br/>${disaster.location}`,
+        {
+          direction: "top",
+          offset: [0, -10],
+        }
+      );
 
-    const animate = () => {
-      drawMap();
-      animationRef.current = requestAnimationFrame(animate);
-    };
-
-    animate();
+      markersRef.current[disaster.id] = { marker, disaster };
+    });
 
     return () => {
-      if (animationRef.current) cancelAnimationFrame(animationRef.current);
+      map.remove();
+      mapInstance.current = null;
     };
-  }, [selectedDisaster]); // <-- only redraw when selection changes
+  }, [onMarkerClick]);
 
-  const handleCanvasClick = (e) => {
-    if (!canvasRef.current) return;
-    const rect = canvasRef.current.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-
-    clickableMarkers.forEach((marker) => {
-      const distance = Math.hypot(x - marker.x, y - marker.y);
-      if (distance < marker.radius) {
-        onMarkerClick(marker.id);
-      }
+  // Update marker when selected
+  useEffect(() => {
+    if (!mapInstance.current) return;
+    Object.entries(markersRef.current).forEach(([id, { marker, disaster }]) => {
+      const isSelected = selectedDisaster === Number(id);
+      const color =
+        disaster.severity === "critical"
+          ? "#dc2626"
+          : disaster.severity === "high"
+          ? "#ea580c"
+          : "#ca8a04";
+      marker.setIcon(
+        L.divIcon({
+          className: "custom-marker",
+          html: `<div style="
+            width:${isSelected ? 16 : 12}px;
+            height:${isSelected ? 16 : 12}px;
+            background-color:${color};
+            border:2px solid white;
+            border-radius:50%;
+            box-shadow:0 2px 8px rgba(0,0,0,0.3);
+            ${isSelected ? "transform:scale(1.2);" : ""}
+          "></div>`,
+        })
+      );
     });
-  };
+  }, [selectedDisaster]);
 
-  return (
-    <div
-      ref={mapContainer}
-      className="w-full h-[750px] bg-white relative cursor-pointer"
-    >
-      <canvas
-        ref={canvasRef}
-        onClick={handleCanvasClick}
-        className="absolute inset-0"
-      />
-
-      {/* Legend */}
-      <div className="absolute top-4 left-4 bg-white rounded-lg shadow-lg p-3 border border-gray-200">
+  return(
+     <div className="w-full h-full bg-white relative">
+      <div ref={mapContainer} className="w-full h-full" />
+      <div className="absolute top-2 left-13 border-2 border-neutral-300 bg-white rounded-sm p-3 border border-gray-200 z-[1000]">
         <div className="flex items-center gap-2 text-xs text-gray-600 mb-2">
           <Activity className="w-3 h-3" />
           <span className="font-medium">Active: {mockDisasters.length}</span>
@@ -383,7 +371,7 @@ function DisasterMap({ selectedDisaster, onMarkerClick }) {
         </div>
       </div>
 
-      <div className="absolute bottom-4 right-4 bg-white/90 backdrop-blur-sm rounded-lg px-3 py-2 border border-gray-200">
+      <div className="absolute bottom-4 right-4 bg-white/90 backdrop-blur-sm rounded-lg px-3 py-2 border border-gray-200 z-[1000]">
         <p className="text-xs text-gray-600 font-medium">
           Global Disaster Heat Map
         </p>
@@ -392,29 +380,27 @@ function DisasterMap({ selectedDisaster, onMarkerClick }) {
   );
 }
 
-export default function Default() {
-  const [selectedDisaster, setSelectedDisaster] = useState(null);
+// -------------------- Main App --------------------
+export default function DisasterMapApp() {
+  const [selectedDisaster, setSelectedDisaster] = useState(4);
   const selectedDisasterData = selectedDisaster
     ? mockDisasters.find((d) => d.id === selectedDisaster)
     : null;
 
   return (
-    <div className="flex w-full">
-      {/* Map fills remaining space */}
-      <div className="flex-1 h-full">
+    <div className="flex h-screen w-screen ">
+      <div className="flex-1">
         <DisasterMap
           selectedDisaster={selectedDisaster}
           onMarkerClick={setSelectedDisaster}
         />
       </div>
 
-      {/* Detail panel slides in */}
-      {selectedDisasterData && (
-        <DetailPanel
-          disaster={selectedDisasterData}
-          onClose={() => setSelectedDisaster(null)}
-        />
-      )}
+      {/* Always show the right panel */}
+      <DetailPanel
+        disaster={selectedDisasterData}
+        onClose={() => setSelectedDisaster(null)}
+      />
     </div>
   );
 }

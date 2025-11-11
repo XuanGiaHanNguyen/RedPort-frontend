@@ -12,7 +12,7 @@ export default function App() {
     <BrowserRouter>
     <Toaster position="top-center" />
       <Navigation  /> {/* works fine for now */}
-      <div className="pt-20"> 
+      <div className="pt-19"> 
         <Routes>
           <Route path="/" element={<Base />} />
           <Route path="/report" element={<ReportEmergency />} />

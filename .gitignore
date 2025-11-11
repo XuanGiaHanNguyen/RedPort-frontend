@@ -22,3 +22,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+src/pages/RedPort.code-workspace
+package-lock.json
+package.json

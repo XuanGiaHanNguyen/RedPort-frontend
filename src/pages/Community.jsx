@@ -8,6 +8,7 @@ import {
   MapPin,
   Navigation,
 } from "lucide-react";
+import toast from "react-hot-toast"
 
 const mockCommunityReports = [
   {
@@ -115,6 +116,8 @@ export default function CommunityReports() {
     setContent("");
     setLocation("");
     setSelectedType("");
+    toast.success("Your post is up!"); 
+
   };
 
   // Get unique types from reports
